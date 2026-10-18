@@ -1,0 +1,1703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>The Quiet Standard Log</title>
+
+  <!-- Embedded PWA Manifest for Android Chrome "Install App" -->
+  <link rel="manifest" href='data:application/manifest+json,{"name":"The Quiet Standard Log","short_name":"Quiet Standard","start_url":".","display":"standalone","background_color":"#000000","theme_color":"#000000","orientation":"portrait","icons":[{"src":"data:image/svg+xml;utf8,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 192 192%27><rect width=%27192%27 height=%27192%27 rx=%2736%27 fill=%27%23000000%27/><rect x=%2712%27 y=%2712%27 width=%27168%27 height=%27168%27 rx=%2728%27 fill=%27none%27 stroke=%27%2310b981%27 stroke-width=%276%27/><text x=%2796%27 y=%27118%27 font-family=%27monospace%27 font-size=%2768%27 font-weight=%27900%27 fill=%27%23ffffff%27 text-anchor=%27middle%27>TQS</text></svg>","sizes":"192x192","type":"image/svg+xml","purpose":"any maskable"},{"src":"data:image/svg+xml;utf8,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 512 512%27><rect width=%27512%27 height=%27512%27 rx=%2796%27 fill=%27%23000000%27/><rect x=%2732%27 y=%2732%27 width=%27448%27 height=%27448%27 rx=%2772%27 fill=%27none%27 stroke=%27%2310b981%27 stroke-width=%2716%27/><text x=%27256%27 y=%27310%27 font-family=%27monospace%27 font-size=%27180%27 font-weight=%27900%27 fill=%27%23ffffff%27 text-anchor=%27middle%27>TQS</text></svg>","sizes":"512x512","type":"image/svg+xml","purpose":"any maskable"}]}' />
+
+  <style>
+    :root {
+      --bg-oled: #000000;
+      --bg-card: #0b0b0c;
+      --bg-elevated: #141417;
+      --border-subtle: #242429;
+      --border-focus: #ffffff;
+      --text-primary: #ffffff;
+      --text-secondary: #94a3b8;
+      --text-ghost: #475569;
+      --accent-gold: #f59e0b;
+      --accent-emerald: #10b981;
+      --accent-crimson: #ef4444;
+      --accent-cyan: #06b6d4;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-oled);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-variant-numeric: tabular-nums;
+      overscroll-behavior-y: none;
+    }
+
+    .app-shell {
+      max-width: 460px;
+      min-height: 100dvh;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      background-color: var(--bg-oled);
+    }
+
+    /* TOP TELEMETRY BAR */
+    .top-bar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(0, 0, 0, 0.95);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 12px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-block {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent-emerald);
+      box-shadow: 0 0 10px var(--accent-emerald);
+    }
+
+    .brand-title {
+      font-size: 0.86rem;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+    }
+
+    .brand-sub {
+      display: block;
+      font-size: 0.62rem;
+      color: var(--text-secondary);
+      letter-spacing: 0.06em;
+    }
+
+    .session-timers {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .timer-pill {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 5px 9px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+
+    .rest-active {
+      border-color: var(--accent-gold);
+      background: rgba(245, 158, 11, 0.14);
+    }
+
+    .timer-label {
+      font-size: 0.56rem;
+      color: var(--text-secondary);
+      font-weight: 800;
+    }
+
+    .timer-digits {
+      font-family: var(--font-mono);
+      font-size: 0.92rem;
+      font-weight: 900;
+    }
+
+    .rest-quick-btns {
+      display: flex;
+      gap: 4px;
+      margin-top: 4px;
+    }
+
+    .rest-quick-btns button {
+      background: #222;
+      color: #fff;
+      border: 1px solid #444;
+      border-radius: 4px;
+      padding: 3px 6px;
+      font-size: 0.65rem;
+      font-weight: 800;
+    }
+
+    /* MAIN VIEWPORT */
+    .viewport-content {
+      flex: 1;
+      padding: 12px 12px 94px;
+    }
+
+    .panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+
+    .standalone-abs-panel {
+      border-color: var(--accent-cyan);
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .panel-header h2 {
+      font-size: 0.8rem;
+      letter-spacing: 0.07em;
+      font-weight: 900;
+    }
+
+    .panel-sub {
+      font-size: 0.72rem;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .panel-badge {
+      font-size: 0.62rem;
+      font-weight: 800;
+      padding: 3px 7px;
+      border-radius: 4px;
+      background: var(--bg-elevated);
+      color: var(--text-secondary);
+    }
+
+    /* TOP 3 DASHBOARD */
+    .top3-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .compound-card {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+
+    .compound-card h4 {
+      font-size: 0.74rem;
+      color: var(--accent-gold);
+      margin-bottom: 6px;
+      letter-spacing: 0.05em;
+    }
+
+    .top-set-row {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 0.84rem;
+      padding: 4px 0;
+      border-bottom: 1px solid #1f1f24;
+    }
+
+    .top-set-row:last-child {
+      border-bottom: none;
+    }
+
+    .top-set-e1rm {
+      color: var(--accent-emerald);
+      font-weight: 800;
+    }
+
+    .empty-stat {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+    }
+
+    /* ROUTINE BUTTONS */
+    .routine-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .launch-routine-btn {
+      width: 100%;
+      min-height: 58px;
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      text-align: left;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .abs-launch {
+      background: rgba(6, 182, 212, 0.12);
+      border-color: var(--accent-cyan);
+    }
+
+    .rt-name {
+      font-size: 0.9rem;
+    }
+
+    .rt-meta {
+      font-size: 0.72rem;
+      color: var(--text-secondary);
+      margin-top: 3px;
+      font-weight: 500;
+    }
+
+    .launch-arrow {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--accent-emerald);
+      font-weight: 900;
+    }
+
+    /* SUPERSET & EXERCISE CARDS */
+    .superset-container {
+      border-left: 3px solid var(--accent-gold);
+      padding-left: 8px;
+      margin-bottom: 16px;
+    }
+
+    .superset-banner {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.68rem;
+      font-weight: 900;
+      color: var(--accent-gold);
+      letter-spacing: 0.06em;
+      margin-bottom: 8px;
+      padding: 5px 8px;
+      background: rgba(245, 158, 11, 0.12);
+      border-radius: 4px;
+    }
+
+    .exercise-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 14px;
+    }
+
+    .ex-title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .superset-pill {
+      background: var(--accent-gold);
+      color: #000;
+      font-weight: 900;
+      font-size: 0.72rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .ex-name {
+      font-size: 0.96rem;
+      font-weight: 800;
+    }
+
+    .ex-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .equip-tag, .muscle-tag, .target-tag {
+      font-size: 0.66rem;
+      font-weight: 700;
+      padding: 3px 7px;
+      border-radius: 4px;
+      background: var(--bg-elevated);
+      color: var(--text-secondary);
+    }
+
+    .target-tag {
+      color: var(--accent-emerald);
+    }
+
+    /* PERSISTENT TEMPO & CUES */
+    .tempo-cues-bar {
+      display: grid;
+      grid-template-columns: 92px 1fr;
+      gap: 8px;
+      margin: 10px 0 12px;
+    }
+
+    .tempo-box, .cues-box {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 6px 8px;
+    }
+
+    .tempo-box label, .cues-box label {
+      display: block;
+      font-size: 0.56rem;
+      font-weight: 800;
+      color: var(--text-secondary);
+      margin-bottom: 2px;
+    }
+
+    .tempo-box input, .cues-box input {
+      width: 100%;
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      font-size: 0.8rem;
+      font-family: var(--font-mono);
+      outline: none;
+    }
+
+    /* SET LOGGING GRID */
+    .std-grid {
+      display: grid;
+      grid-template-columns: 42px 1.2fr 0.85fr 52px 50px 48px;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .time-grid {
+      display: grid;
+      grid-template-columns: 46px 1fr 54px;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .set-grid-header {
+      font-size: 0.62rem;
+      font-weight: 800;
+      color: var(--text-secondary);
+      text-align: center;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .set-row {
+      padding: 6px 0;
+      border-bottom: 1px solid #151518;
+    }
+
+    .set-completed {
+      background: rgba(16, 185, 129, 0.08);
+    }
+
+    .set-type-btn {
+      height: 48px;
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-elevated);
+      font-family: var(--font-mono);
+      font-weight: 900;
+      font-size: 0.9rem;
+      color: var(--text-primary);
+    }
+
+    .type-W { color: var(--text-secondary); border-color: #334155; }
+    .type-T { color: var(--accent-gold); border-color: var(--accent-gold); }
+    .type-B { color: var(--accent-cyan); border-color: var(--accent-cyan); }
+    .type-F { color: var(--accent-crimson); border-color: var(--accent-crimson); }
+
+    .weight-cell {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .log-input {
+      width: 100%;
+      height: 48px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 0.98rem;
+      font-weight: 700;
+      text-align: center;
+      outline: none;
+    }
+
+    .log-input::placeholder {
+      color: var(--text-ghost);
+      font-weight: 600;
+    }
+
+    .log-input:focus {
+      border-color: var(--border-focus);
+    }
+
+    .plate-calc-trigger {
+      position: absolute;
+      right: 3px;
+      bottom: 3px;
+      background: #1e1e24;
+      color: var(--accent-gold);
+      border: 1px solid #444;
+      border-radius: 4px;
+      font-size: 0.5rem;
+      font-weight: 900;
+      padding: 2px 4px;
+    }
+
+    .rir-select {
+      height: 48px;
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      font-family: var(--font-mono);
+      font-size: 0.88rem;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .e1rm-cell {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      text-align: center;
+    }
+
+    .check-btn {
+      height: 48px;
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-elevated);
+      color: var(--text-secondary);
+      font-size: 1.15rem;
+      font-weight: 900;
+    }
+
+    .check-btn.checked {
+      background: var(--accent-emerald);
+      color: #000;
+      border-color: var(--accent-emerald);
+    }
+
+    .add-set-btn {
+      width: 100%;
+      min-height: 44px;
+      margin-top: 8px;
+      background: transparent;
+      border: 1px dashed var(--border-subtle);
+      color: var(--text-secondary);
+      border-radius: 8px;
+      font-size: 0.74rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+    }
+
+    /* VOLUME & PORTABILITY */
+    .volume-row {
+      display: grid;
+      grid-template-columns: 130px 1fr 58px;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0;
+      font-size: 0.78rem;
+    }
+
+    .vol-bar-track {
+      height: 8px;
+      background: var(--bg-elevated);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .vol-bar-fill {
+      height: 100%;
+      background: var(--accent-emerald);
+    }
+
+    .vol-count {
+      font-family: var(--font-mono);
+      text-align: right;
+      font-weight: 700;
+    }
+
+    .portability-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .secondary-action-btn, .finish-btn {
+      min-height: 52px;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 0.78rem;
+      letter-spacing: 0.05em;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+    }
+
+    .finish-btn {
+      width: 100%;
+      background: var(--accent-emerald);
+      color: #000;
+      border-color: var(--accent-emerald);
+      margin-top: 10px;
+    }
+
+    /* LIBRARY FORM */
+    .new-ex-form {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .new-ex-form input, .new-ex-form select {
+      height: 46px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      color: #fff;
+      padding: 0 10px;
+      font-size: 0.85rem;
+    }
+
+    .form-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .lib-ex-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #18181c;
+    }
+
+    .lib-ex-name {
+      font-size: 0.86rem;
+      font-weight: 700;
+    }
+
+    .lib-ex-meta {
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .delete-ex-btn {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--accent-crimson);
+      border: 1px solid var(--accent-crimson);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 0.68rem;
+      font-weight: 800;
+    }
+
+    /* PLATE MODAL */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.86);
+      z-index: 100;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .plate-modal {
+      width: 100%;
+      max-width: 460px;
+      background: var(--bg-card);
+      border-top: 2px solid var(--accent-gold);
+      border-radius: 16px 16px 0 0;
+      padding: 18px;
+    }
+
+    .close-modal-btn {
+      background: var(--bg-elevated);
+      color: #fff;
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-weight: 900;
+    }
+
+    .plate-inputs-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 12px 0;
+    }
+
+    .plate-inputs-row label {
+      display: block;
+      font-size: 0.62rem;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+      font-weight: 700;
+    }
+
+    .plate-inputs-row input, .plate-inputs-row select {
+      width: 100%;
+      height: 48px;
+      background: var(--bg-elevated);
+      color: #fff;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 0 10px;
+      font-family: var(--font-mono);
+      font-size: 0.92rem;
+    }
+
+    .barbell-graphic {
+      display: flex;
+      align-items: center;
+      margin-top: 12px;
+      padding: 16px 8px;
+      background: var(--bg-oled);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      overflow-x: auto;
+    }
+
+    .bar-shaft {
+      background: #475569;
+      color: #fff;
+      padding: 8px 12px;
+      font-size: 0.74rem;
+      font-weight: 800;
+      border-radius: 4px 0 0 4px;
+      white-space: nowrap;
+    }
+
+    .bar-sleeve {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding-left: 6px;
+    }
+
+    .plate-disk {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-weight: 900;
+      font-size: 0.74rem;
+      border-radius: 4px;
+      padding: 0 8px;
+      color: #000;
+    }
+
+    .plate-20 { height: 90px; background: #ef4444; color: #fff; }
+    .plate-15 { height: 80px; background: #eab308; }
+    .plate-10 { height: 70px; background: #22c55e; }
+    .plate-5 { height: 58px; background: #f8fafc; }
+    .plate-2_5 { height: 48px; background: #94a3b8; }
+    .plate-1_25 { height: 40px; background: #64748b; color: #fff; }
+
+    /* BOTTOM NAV */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 460px;
+      height: 64px;
+      background: rgba(0, 0, 0, 0.96);
+      border-top: 1px solid var(--border-subtle);
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      z-index: 60;
+    }
+
+    .bottom-nav button {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+    }
+
+    .bottom-nav button.nav-active {
+      color: var(--accent-emerald);
+      border-top: 2px solid var(--accent-emerald);
+    }
+  </style>
+</head>
+<body>
+  <div id="app" class="app-shell"></div>
+
+  <script>
+    const STORAGE_KEY = "THE_QUIET_STANDARD_LOG_V1";
+    const SET_TYPES = ["W", "T", "B", "F"];
+
+    const INITIAL_DB = {
+      settings: {
+        theme: "dark",
+        defaultBarWeight: 20,
+        availablePlates: [20, 15, 10, 5, 2.5, 1.25],
+        barPresets: [
+          { label: "Standard Olympic", weight: 20 },
+          { label: "Short Bar", weight: 15 },
+          { label: "EZ-Curl Bar", weight: 10 },
+          { label: "Trap / Hex Bar", weight: 25 }
+        ]
+      },
+      exercises: [
+        { id: "ex_1", name: "Standing Cable Lateral Raises", equipmentType: "Cable", muscleGroup: "Lateral Deltoids", defaultTempo: "3-0-1-1", notes: "Wrist height; lean out slightly; lead with elbows" },
+        { id: "ex_2", name: "Flat Barbell Bench Press", equipmentType: "Barbell", muscleGroup: "Chest", defaultTempo: "3-1-1-0", notes: "3s descent, 1s pause on chest, explosive press" },
+        { id: "ex_3", name: "Transverse Abdominis (TVA) Vacuums", equipmentType: "Time-Based", muscleGroup: "Core", defaultTempo: "Hold", notes: "Fully exhaled; pull navel to spine (25-30s)" },
+        { id: "ex_tbar_row", name: "Chest-Supported Pronated T-Bar Row", equipmentType: "Barbell", muscleGroup: "Back", defaultTempo: "2-1-1-0", notes: "Elbows flared 45°; zero lumbar swing" },
+        { id: "ex_db_partials", name: "Standing DB Lateral Heavy Partials", equipmentType: "Dumbbell", muscleGroup: "Lateral Deltoids", defaultTempo: "2-0-1-0", notes: "Bottom 45° abduction; RIR 0 on Set 2" },
+        { id: "ex_face_pull", name: "Cable Face Pulls (External Rotation)", equipmentType: "Cable", muscleGroup: "Posterior Deltoids", defaultTempo: "2-1-1-1", notes: "Rope at eye level; rotate knuckles backward" },
+        { id: "ex_db_shrug", name: "Heavy DB Shrugs", equipmentType: "Dumbbell", muscleGroup: "Trapezius", defaultTempo: "2-2-1-1", notes: "Strict 2s pause at peak contraction" },
+        { id: "ex_incline_curl", name: "Incline Dumbbell Bicep Curls", equipmentType: "Dumbbell", muscleGroup: "Biceps", defaultTempo: "3-1-1-0", notes: "Elbows locked behind torso" },
+        { id: "ex_dips", name: "Weighted Dips / Close-Grip Pushdowns", equipmentType: "Bodyweight", muscleGroup: "Triceps", defaultTempo: "3-1-1-0", notes: "Overload lengthened state" },
+        { id: "ex_squat", name: "Low-Bar Back Squat / Hack Squat", equipmentType: "Barbell", muscleGroup: "Quadriceps", defaultTempo: "3-1-1-0", notes: "Controlled 3s descent; stop shy of lockout" },
+        { id: "ex_db_rdl", name: "Dumbbell Romanian Deadlift (RDL)", equipmentType: "Dumbbell", muscleGroup: "Hamstrings", defaultTempo: "3-1-1-0", notes: "Push hips back; dumbbells trace shins" },
+        { id: "ex_leg_ext", name: "Seated Leg Extensions", equipmentType: "Machine", muscleGroup: "Quadriceps", defaultTempo: "3-0-1-1", notes: "1s peak squeeze at top" },
+        { id: "ex_ham_curl", name: "Lying Hamstring Curls", equipmentType: "Machine", muscleGroup: "Hamstrings", defaultTempo: "3-0-1-1", notes: "Hips pinned flat to pad" },
+        { id: "ex_standing_calf", name: "Standing Calf Raises", equipmentType: "Machine", muscleGroup: "Calves", defaultTempo: "2-2-1-1", notes: "2s dead-stop stretch at bottom" },
+        { id: "ex_lean_lateral", name: "Lean-Away Cable Lateral Raises", equipmentType: "Cable", muscleGroup: "Lateral Deltoids", defaultTempo: "3-0-1-1", notes: "Lean 15° from tower; wide arc" },
+        { id: "ex_incline_db_press", name: "Incline Dumbbell Chest Press", equipmentType: "Dumbbell", muscleGroup: "Chest", defaultTempo: "3-1-1-0", notes: "30° bench angle; pack scapulae" },
+        { id: "ex_lat_pulldown", name: "Neutral-Grip Lat Pulldown", equipmentType: "Cable", muscleGroup: "Back", defaultTempo: "3-1-1-1", notes: "Pull elbows to collarbones; 1s squeeze" },
+        { id: "ex_rear_delt_fly", name: "Cable Rear Delt Flyes (15° Lever)", equipmentType: "Cable", muscleGroup: "Posterior Deltoids", defaultTempo: "3-1-1-0", notes: "Eye level; fixed 15° elbow lock" },
+        { id: "ex_seated_lat", name: "Seated DB Lateral Raises", equipmentType: "Dumbbell", muscleGroup: "Lateral Deltoids", defaultTempo: "3-0-1-0", notes: "Strict scapular plane; 50% drop-set on Set 2" },
+        { id: "ex_kelso_shrug", name: "Incline Chest-Supported Kelso Shrugs", equipmentType: "Dumbbell", muscleGroup: "Trapezius", defaultTempo: "2-1-1-1", notes: "45° bench; pure scapular retraction" },
+        { id: "ex_oh_tricep_ext", name: "Overhead Cable Tricep Extensions", equipmentType: "Cable", muscleGroup: "Triceps", defaultTempo: "3-0-1-0", notes: "Deep stretch behind head" },
+        { id: "ex_deadlift", name: "Conventional Barbell Deadlift", equipmentType: "Barbell", muscleGroup: "Posterior Chain", defaultTempo: "1-1-1-0", notes: "Dead-stop reset from floor; bar speed focus" },
+        { id: "ex_snatch_rdl", name: "Snatch-Grip Barbell RDL + Shrug-Hang", equipmentType: "Barbell", muscleGroup: "Trapezius", defaultTempo: "3-1-1-2", notes: "Wide grip; 2s shrug-hold at lockout" },
+        { id: "ex_cable_crunch", name: "Kneeling Cable Rope Crunch", equipmentType: "Cable", muscleGroup: "Core", defaultTempo: "3-0-1-2", notes: "Lock hips; sternum to pubic bone; 2s squeeze" },
+        { id: "ex_hanging_leg_raise", name: "Hanging Weighted Leg/Pelvic Raises", equipmentType: "Dumbbell", muscleGroup: "Core", defaultTempo: "3-1-1-0", notes: "Posterior pelvic tilt; curl belt buckle to chest" },
+        { id: "ex_ab_wheel", name: "Kneeling Ab Wheel Rollouts", equipmentType: "Bodyweight", muscleGroup: "Core", defaultTempo: "3-1-1-0", notes: "Hollow body tuck; 1s pause above floor" },
+        { id: "ex_pallof_press", name: "Standing Cable Pallof Press + OH Reach", equipmentType: "Cable", muscleGroup: "Core", defaultTempo: "2-2-1-1", notes: "Chest height; 2s lockout hold" }
+      ],
+      routines: [
+        {
+          id: "rt_1",
+          name: "Day 1: Upper Body A (Width & Tension)",
+          isStandaloneModule: false,
+          blocks: [
+            { type: "standard", exerciseId: "ex_1", targetSets: 4, targetReps: "10-12", restSeconds: 60 },
+            { type: "standard", exerciseId: "ex_2", targetSets: 3, targetReps: "6-8", restSeconds: 150 },
+            { type: "standard", exerciseId: "ex_tbar_row", targetSets: 3, targetReps: "6-8", restSeconds: 120 },
+            { type: "standard", exerciseId: "ex_db_partials", targetSets: 2, targetReps: "15-20", restSeconds: 60 },
+            { type: "standard", exerciseId: "ex_face_pull", targetSets: 4, targetReps: "12-15", restSeconds: 60 },
+            { type: "standard", exerciseId: "ex_db_shrug", targetSets: 3, targetReps: "8-10", restSeconds: 90 },
+            {
+              type: "superset",
+              groupLabel: "A",
+              exercises: [
+                { exerciseId: "ex_incline_curl", targetSets: 3, targetReps: "8-10" },
+                { exerciseId: "ex_dips", targetSets: 3, targetReps: "8-10" }
+              ],
+              restSeconds: 60
+            }
+          ]
+        },
+        {
+          id: "rt_2",
+          name: "Day 2: Lower Body A (Quad Bias)",
+          isStandaloneModule: false,
+          blocks: [
+            { type: "standard", exerciseId: "ex_squat", targetSets: 3, targetReps: "8-10", restSeconds: 150 },
+            { type: "standard", exerciseId: "ex_db_rdl", targetSets: 3, targetReps: "8-10", restSeconds: 120 },
+            { type: "standard", exerciseId: "ex_leg_ext", targetSets: 3, targetReps: "12-15", restSeconds: 60 },
+            { type: "standard", exerciseId: "ex_ham_curl", targetSets: 3, targetReps: "10-12", restSeconds: 60 },
+            { type: "standard", exerciseId: "ex_standing_calf", targetSets: 3, targetReps: "12-15", restSeconds: 60 },
+            { type: "standard", exerciseId: "ex_pallof_press", targetSets: 3, targetReps: "12/side", restSeconds: 60 }
+          ]
+        },
+        {
+          id: "rt_3",
+          name: "Day 4: Upper Body B (3D Delt Specialization)",
+          isStandaloneModule: false,
+          blocks: [
+            { type: "standard", exerciseId: "ex_lean_lateral", targetSets: 4, targetReps: "12-15", restSeconds: 60 },
+            { type: "standard", exerciseId: "ex_incline_db_press", targetSets: 3, targetReps: "8-10", restSeconds: 90 },
+            { type: "standard", exerciseId: "ex_lat_pulldown", targetSets: 3, targetReps: "8-10", restSeconds: 90 },
+            { type: "standard", exerciseId: "ex_rear_delt_fly", targetSets: 4, targetReps: "12-15", restSeconds: 60 },
+            { type: "standard", exerciseId: "ex_seated_lat", targetSets: 2, targetReps: "12-15", restSeconds: 45 },
+            { type: "standard", exerciseId: "ex_db_shrug", targetSets: 3, targetReps: "12-15", restSeconds: 60 },
+            { type: "standard", exerciseId: "ex_kelso_shrug", targetSets: 2, targetReps: "12-15", restSeconds: 60 },
+            {
+              type: "superset",
+              groupLabel: "B",
+              exercises: [
+                { exerciseId: "ex_oh_tricep_ext", targetSets: 3, targetReps: "10-12" },
+                { exerciseId: "ex_incline_curl", targetSets: 3, targetReps: "10-12" }
+              ],
+              restSeconds: 60
+            }
+          ]
+        },
+        {
+          id: "rt_4",
+          name: "Day 5: Lower Body B (Posterior & Traps)",
+          isStandaloneModule: false,
+          blocks: [
+            { type: "standard", exerciseId: "ex_deadlift", targetSets: 3, targetReps: "5", restSeconds: 150 },
+            { type: "standard", exerciseId: "ex_snatch_rdl", targetSets: 3, targetReps: "8-10", restSeconds: 90 }
+          ]
+        },
+        {
+          id: "rt_abs",
+          name: "Standalone Abs / Core (31\" Waist Blueprint)",
+          isStandaloneModule: true,
+          blocks: [
+            { type: "standard", exerciseId: "ex_cable_crunch", targetSets: 4, targetReps: "10-12", restSeconds: 90 },
+            { type: "standard", exerciseId: "ex_hanging_leg_raise", targetSets: 4, targetReps: "10-12", restSeconds: 90 },
+            { type: "standard", exerciseId: "ex_ab_wheel", targetSets: 3, targetReps: "8-10", restSeconds: 90 },
+            { type: "standard", exerciseId: "ex_pallof_press", targetSets: 3, targetReps: "10-12", restSeconds: 60 },
+            { type: "standard", exerciseId: "ex_3", targetSets: 3, targetReps: "25-30s", restSeconds: 45 }
+          ]
+        }
+      ],
+      workoutSessions: [
+        {
+          id: "ws_101",
+          routineId: "rt_1",
+          date: "2026-10-14T08:00:00Z",
+          durationSeconds: 4200,
+          logs: [
+            {
+              exerciseId: "ex_2",
+              sets: [
+                { setId: 1, type: "W", weight: 60, reps: 10, rir: null, e1rm: null, completed: true },
+                { setId: 2, type: "T", weight: 100, reps: 6, rir: 1, e1rm: 120, completed: true }
+              ]
+            },
+            {
+              exerciseId: "ex_squat",
+              sets: [
+                { setId: 1, type: "T", weight: 135, reps: 8, rir: 1, e1rm: 171, completed: true }
+              ]
+            },
+            {
+              exerciseId: "ex_deadlift",
+              sets: [
+                { setId: 1, type: "T", weight: 160, reps: 5, rir: 2, e1rm: 186.7, completed: true }
+              ]
+            },
+            {
+              exerciseId: "ex_3",
+              sets: [
+                { setId: 1, type: "T", durationSeconds: 25, completed: true }
+              ]
+            }
+          ]
+        }
+      ]
+    };
+
+    // APPLICATION STATE
+    let state = {
+      db: loadDatabase(),
+      activeTab: "dashboard",
+      activeSession: null,
+      workoutElapsed: 0,
+      restTimer: { active: false, remaining: 0, total: 60 },
+      plateModal: { open: false, weight: 100, barWeight: 20, exerciseName: "" },
+      newEx: { name: "", equipmentType: "Barbell", muscleGroup: "Lateral Deltoids", defaultTempo: "3-0-1-1", notes: "" }
+    };
+
+    function loadDatabase() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_DB));
+          return JSON.parse(JSON.stringify(INITIAL_DB));
+        }
+        return JSON.parse(raw);
+      } catch (e) {
+        return JSON.parse(JSON.stringify(INITIAL_DB));
+      }
+    }
+
+    function saveDatabase() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state.db));
+      } catch (e) {}
+    }
+
+    function calculateE1RM(weight, reps, setType = "T") {
+      if (setType === "W") return null;
+      const w = parseFloat(weight);
+      const r = parseInt(reps, 10);
+      if (isNaN(w) || isNaN(r) || w <= 0 || r <= 0) return null;
+      if (r === 1) return w;
+      return Math.round(w * (1 + r / 30) * 10) / 10;
+    }
+
+    function calculatePlateBreakdown(targetWeight, barWeight = 20) {
+      const total = parseFloat(targetWeight);
+      const bar = parseFloat(barWeight);
+      const plates = state.db.settings.availablePlates || [20, 15, 10, 5, 2.5, 1.25];
+      if (isNaN(total) || total <= bar) {
+        return { perSideWeight: 0, platesPerSide: [], remainderTotal: total < bar ? total : 0 };
+      }
+      let rem = (total - bar) / 2;
+      const platesPerSide = [];
+      for (const p of [...plates].sort((a, b) => b - a)) {
+        while (rem >= p - 0.001) {
+          platesPerSide.push(p);
+          rem = Math.round((rem - p) * 100) / 100;
+        }
+      }
+      return {
+        perSideWeight: Math.round(((total - bar) / 2) * 100) / 100,
+        platesPerSide,
+        remainderTotal: Math.round(rem * 2 * 100) / 100
+      };
+    }
+
+    function getGhostSet(exerciseId, setIndex) {
+      const sorted = [...state.db.workoutSessions].sort((a, b) => new Date(b.date) - new Date(a.date));
+      for (const sess of sorted) {
+        const log = sess.logs.find((l) => l.exerciseId === exerciseId);
+        if (log && log.sets && log.sets.length > 0) {
+          const target = log.sets[setIndex] || log.sets[log.sets.length - 1];
+          if (target && target.completed) {
+            return {
+              weight: target.weight ?? "",
+              reps: target.reps ?? "",
+              rir: target.rir ?? 1,
+              durationSeconds: target.durationSeconds ?? 25,
+              type: target.type || "T"
+            };
+          }
+        }
+      }
+      return null;
+    }
+
+    function getTop3Compounds() {
+      const matchers = [
+        { key: "Squat", label: "Squat", regex: /squat/i },
+        { key: "Bench", label: "Bench Press", regex: /bench press/i },
+        { key: "Deadlift", label: "Deadlift", regex: /deadlift/i }
+      ];
+      const out = [];
+      matchers.forEach(({ label, regex }) => {
+        const ids = new Set(state.db.exercises.filter((e) => regex.test(e.name)).map((e) => e.id));
+        const sets = [];
+        state.db.workoutSessions.forEach((sess) => {
+          sess.logs.forEach((log) => {
+            if (ids.has(log.exerciseId)) {
+              log.sets.forEach((s) => {
+                if (s.completed && s.type !== "W" && s.weight > 0 && s.reps > 0) {
+                  const e1rm = s.e1rm || calculateE1RM(s.weight, s.reps, s.type);
+                  sets.push({ weight: s.weight, reps: s.reps, e1rm });
+                }
+              });
+            }
+          });
+        });
+        sets.sort((a, b) => b.e1rm - a.e1rm);
+        out.push({ label, topSets: sets.slice(0, 3) });
+      });
+      return out;
+    }
+
+    function getWeeklyVolume() {
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - 7);
+      const exMap = {};
+      state.db.exercises.forEach((e) => (exMap[e.id] = e));
+      const vol = {};
+      state.db.workoutSessions.forEach((sess) => {
+        if (new Date(sess.date) >= cutoff) {
+          sess.logs.forEach((log) => {
+            const ex = exMap[log.exerciseId];
+            if (!ex) return;
+            const count = log.sets.filter((s) => s.completed && s.type !== "W").length;
+            if (count > 0) vol[ex.muscleGroup] = (vol[ex.muscleGroup] || 0) + count;
+          });
+        }
+      });
+      return vol;
+    }
+
+    function formatTime(secs, hours = false) {
+      const h = Math.floor(secs / 3600);
+      const m = Math.floor((secs % 3600) / 60);
+      const s = secs % 60;
+      const pad = (n) => String(n).padStart(2, "0");
+      if (hours && h > 0) return `${pad(h)}:${pad(m)}:${pad(s)}`;
+      return `${pad(m)}:${pad(s)}`;
+    }
+
+    // TIMERS
+    setInterval(() => {
+      let tickUpdate = false;
+      if (state.activeSession) {
+        state.workoutElapsed += 1;
+        tickUpdate = true;
+      }
+      if (state.restTimer.active) {
+        if (state.restTimer.remaining > 0) {
+          state.restTimer.remaining -= 1;
+          if (state.restTimer.remaining === 0) {
+            state.restTimer.active = false;
+            if ("vibrate" in navigator) navigator.vibrate([200, 100, 200, 100, 300]);
+          }
+        } else {
+          state.restTimer.active = false;
+        }
+        tickUpdate = true;
+      }
+      if (tickUpdate) updateTimerDOM();
+    }, 1000);
+
+    function updateTimerDOM() {
+      const sessEl = document.getElementById("session-timer-digits");
+      if (sessEl) sessEl.textContent = formatTime(state.workoutElapsed, true);
+      const restEl = document.getElementById("rest-timer-digits");
+      if (restEl) restEl.textContent = formatTime(state.restTimer.remaining, false);
+    }
+
+    // ACTIONS
+    window.switchTab = function(tab) {
+      state.activeTab = tab;
+      render();
+    };
+
+    window.startRoutine = function(routineId) {
+      const routine = state.db.routines.find((r) => r.id === routineId);
+      if (!routine) return;
+      const logsMap = {};
+      const initEx = (exId, targetSets) => {
+        const ex = state.db.exercises.find((e) => e.id === exId);
+        if (!ex) return;
+        const isTimeBased = ex.equipmentType === "Time-Based";
+        const sets = Array.from({ length: targetSets }, (_, i) => {
+          const ghost = getGhostSet(exId, i);
+          const defType = i === 0 ? "T" : i === targetSets - 1 ? "F" : "B";
+          return {
+            setId: i + 1,
+            type: ghost?.type || defType,
+            weight: "",
+            reps: "",
+            rir: ghost?.rir ?? 1,
+            durationSeconds: "",
+            e1rm: null,
+            completed: false,
+            ghost
+          };
+        });
+        logsMap[exId] = { exerciseId: exId, sets, isTimeBased };
+      };
+
+      routine.blocks.forEach((b) => {
+        if (b.type === "standard") initEx(b.exerciseId, b.targetSets);
+        else if (b.type === "superset") b.exercises.forEach((sub) => initEx(sub.exerciseId, sub.targetSets));
+      });
+
+      state.activeSession = {
+        id: "ws_" + Date.now(),
+        routineId: routine.id,
+        routineName: routine.name,
+        date: new Date().toISOString(),
+        blocks: routine.blocks,
+        logsMap
+      };
+      state.workoutElapsed = 0;
+      state.restTimer = { active: false, remaining: 0, total: 60 };
+      state.activeTab = "workout";
+      render();
+    };
+
+    window.adjustRest = function(delta) {
+      if (delta === 0) {
+        state.restTimer = { active: false, remaining: 0, total: 60 };
+      } else {
+        state.restTimer.remaining = Math.max(0, state.restTimer.remaining + delta);
+      }
+      render();
+    };
+
+    window.updateExMeta = function(exId, field, val) {
+      const ex = state.db.exercises.find((e) => e.id === exId);
+      if (ex) {
+        ex[field] = val;
+        saveDatabase();
+      }
+    };
+
+    window.updateSetInput = function(exId, idx, field, val) {
+      const exLog = state.activeSession.logsMap[exId];
+      const s = exLog.sets[idx];
+      s[field] = val;
+      const w = s.weight !== "" ? s.weight : s.ghost?.weight;
+      const r = s.reps !== "" ? s.reps : s.ghost?.reps;
+      s.e1rm = calculateE1RM(w, r, s.type);
+      const e1rmNode = document.getElementById(`e1rm-${exId}-${idx}`);
+      if (e1rmNode) e1rmNode.textContent = s.type === "W" || !s.e1rm ? "—" : s.e1rm;
+    };
+
+    window.cycleSetType = function(exId, idx) {
+      const s = state.activeSession.logsMap[exId].sets[idx];
+      s.type = SET_TYPES[(SET_TYPES.indexOf(s.type) + 1) % SET_TYPES.length];
+      render();
+    };
+
+    window.toggleSetComplete = function(exId, idx, restSeconds) {
+      const exLog = state.activeSession.logsMap[exId];
+      const s = exLog.sets[idx];
+      s.completed = !s.completed;
+
+      if (s.completed) {
+        if (exLog.isTimeBased) {
+          s.durationSeconds = s.durationSeconds !== "" ? Number(s.durationSeconds) : Number(s.ghost?.durationSeconds || 25);
+        } else {
+          s.weight = s.weight !== "" ? Number(s.weight) : Number(s.ghost?.weight || 0);
+          s.reps = s.reps !== "" ? Number(s.reps) : Number(s.ghost?.reps || 0);
+          s.e1rm = calculateE1RM(s.weight, s.reps, s.type);
+        }
+        if (s.type !== "W") {
+          state.restTimer = { active: true, remaining: restSeconds || 60, total: restSeconds || 60 };
+        }
+      }
+      render();
+    };
+
+    window.addSet = function(exId) {
+      const exLog = state.activeSession.logsMap[exId];
+      const nextIdx = exLog.sets.length;
+      const ghost = getGhostSet(exId, nextIdx);
+      exLog.sets.push({
+        setId: nextIdx + 1,
+        type: "B",
+        weight: "",
+        reps: "",
+        rir: 1,
+        durationSeconds: "",
+        e1rm: null,
+        completed: false,
+        ghost
+      });
+      render();
+    };
+
+    window.finishWorkout = function() {
+      if (!state.activeSession) return;
+      const logs = Object.values(state.activeSession.logsMap)
+        .map((exLog) => ({
+          exerciseId: exLog.exerciseId,
+          sets: exLog.sets.filter((s) => s.completed).map(({ ghost, ...clean }) => clean)
+        }))
+        .filter((l) => l.sets.length > 0);
+
+      state.db.workoutSessions.unshift({
+        id: state.activeSession.id,
+        routineId: state.activeSession.routineId,
+        date: state.activeSession.date,
+        durationSeconds: state.workoutElapsed,
+        logs
+      });
+      saveDatabase();
+      state.activeSession = null;
+      state.restTimer = { active: false, remaining: 0, total: 60 };
+      state.activeTab = "dashboard";
+      render();
+    };
+
+    window.openPlateModal = function(exId, idx) {
+      const ex = state.db.exercises.find((e) => e.id === exId);
+      const s = state.activeSession.logsMap[exId].sets[idx];
+      const w = Number(s.weight || s.ghost?.weight || 60);
+      state.plateModal = {
+        open: true,
+        weight: w,
+        barWeight: state.db.settings.defaultBarWeight || 20,
+        exerciseName: ex ? ex.name : "Barbell Movement"
+      };
+      render();
+    };
+
+    window.closePlateModal = function() {
+      state.plateModal.open = false;
+      render();
+    };
+
+    window.updatePlateModal = function(field, val) {
+      state.plateModal[field] = Number(val);
+      render();
+    };
+
+    window.exportJSON = function() {
+      const dataStr = JSON.stringify(state.db, null, 2);
+      const blob = new Blob([dataStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `the_quiet_standard_backup_${new Date().toISOString().split("T")[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    };
+
+    window.importJSON = function(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (parsed.exercises && parsed.workoutSessions) {
+            state.db = parsed;
+            saveDatabase();
+            render();
+            alert("Database imported successfully!");
+          }
+        } catch (err) {
+          alert("Invalid JSON backup file.");
+        }
+      };
+      reader.readAsText(file);
+    };
+
+    window.saveNewExercise = function() {
+      const name = document.getElementById("new-ex-name").value.trim();
+      const equip = document.getElementById("new-ex-equip").value;
+      const muscle = document.getElementById("new-ex-muscle").value.trim() || "General";
+      const tempo = document.getElementById("new-ex-tempo").value.trim() || "3-0-1-0";
+      const notes = document.getElementById("new-ex-notes").value.trim();
+      if (!name) return;
+      state.db.exercises.push({
+        id: "ex_custom_" + Date.now(),
+        name,
+        equipmentType: equip,
+        muscleGroup: muscle,
+        defaultTempo: tempo,
+        notes
+      });
+      saveDatabase();
+      render();
+    };
+
+    window.deleteExercise = function(id) {
+      state.db.exercises = state.db.exercises.filter((e) => e.id !== id);
+      saveDatabase();
+      render();
+    };
+
+    function renderExerciseCardHTML(exId, targetReps, restSeconds, badge = null) {
+      const ex = state.db.exercises.find((e) => e.id === exId);
+      const exLog = state.activeSession?.logsMap[exId];
+      if (!ex || !exLog) return "";
+      const isBarbell = ex.equipmentType === "Barbell";
+      const isTime = ex.equipmentType === "Time-Based";
+
+      const setsHTML = exLog.sets.map((s, idx) => {
+        const ghostW = s.ghost?.weight ? s.ghost.weight : "—";
+        const ghostR = s.ghost?.reps ? s.ghost.reps : "—";
+        const ghostS = s.ghost?.durationSeconds ? s.ghost.durationSeconds + "s" : "25s";
+        const liveE1rm = s.e1rm || calculateE1RM(s.weight !== "" ? s.weight : s.ghost?.weight, s.reps !== "" ? s.reps : s.ghost?.reps, s.type);
+
+        return `
+          <div class="set-row ${isTime ? "time-grid" : "std-grid"} ${s.completed ? "set-completed" : ""}">
+            <button type="button" class="set-type-btn type-${s.type}" onclick="cycleSetType('${exId}', ${idx})">${s.type}</button>
+            ${
+              isTime
+                ? `<input type="number" inputmode="numeric" class="log-input" placeholder="${ghostS}" value="${s.durationSeconds}" oninput="updateSetInput('${exId}',${idx}, 'durationSeconds', this.value)" />`
+                : `
+                  <div class="weight-cell">
+                    <input type="number" inputmode="decimal" step="0.5" class="log-input" placeholder="${ghostW}" value="${s.weight}" oninput="updateSetInput('${exId}',${idx}, 'weight', this.value)" />
+                    ${isBarbell ? `<button type="button" class="plate-calc-trigger" onclick="openPlateModal('${exId}', ${idx})">PLATES</button>` : ""}
+                  </div>
+                  <input type="number" inputmode="numeric" class="log-input" placeholder="${ghostR}" value="${s.reps}" oninput="updateSetInput('${exId}',${idx}, 'reps', this.value)" />
+                  <select class="rir-select" ${s.type === "W" ? "disabled" : ""} onchange="updateSetInput('${exId}',${idx}, 'rir', Number(this.value))">
+                    ${[0, 1, 2, 3, 4, 5].map((v) => `<option value="${v}" ${(s.rir ?? 1) === v ? "selected" : ""}>${v}</option>`).join("")}
+                  </select>
+                  <div class="e1rm-cell" id="e1rm-${exId}-${idx}">${s.type === "W" || !liveE1rm ? "—" : liveE1rm}</div>
+                `
+            }
+            <button type="button" class="check-btn ${s.completed ? "checked" : ""}" onclick="toggleSetComplete('${exId}', ${idx}, ${restSeconds})">✓</button>
+          </div>
+        `;
+      }).join("");
+
+      return `
+        <div class="exercise-card">
+          <div class="ex-title-row">
+            ${badge ? `<span class="superset-pill">${badge}</span>` : ""}
+            <h3 class="ex-name">${ex.name}</h3>
+          </div>
+          <div class="ex-badges">
+            <span class="equip-tag">${ex.equipmentType}</span>
+            <span class="muscle-tag">${ex.muscleGroup}</span>
+            <span class="target-tag">Target: ${targetReps}</span>
+          </div>
+          <div class="tempo-cues-bar">
+            <div class="tempo-box">
+              <label>TEMPO</label>
+              <input type="text" value="${ex.defaultTempo}" oninput="updateExMeta('${ex.id}', 'defaultTempo', this.value)" />
+            </div>
+            <div class="cues-box">
+              <label>EXECUTION CUES & SETUP</label>
+              <input type="text" value="${ex.notes}" placeholder="Seat height, cable pin..." oninput="updateExMeta('${ex.id}', 'notes', this.value)" />
+            </div>
+          </div>
+          <div class="set-grid-header ${isTime ? "time-grid" : "std-grid"}">
+            <span>SET</span>
+            <span>${isTime ? "HOLD (SEC)" : "KG"}</span>
+            ${!isTime ? `<span>REPS</span><span>RIR</span><span>E1RM</span>` : ""}
+            <span>LOG</span>
+          </div>
+          ${setsHTML}
+          <button type="button" class="add-set-btn" onclick="addSet('${exId}')">+ ADD SET</button>
+        </div>
+      `;
+    }
+
+    function render() {
+      const app = document.getElementById("app");
+      const top3 = getTop3Compounds();
+      const weeklyVol = getWeeklyVolume();
+      const pb = calculatePlateBreakdown(state.plateModal.weight, state.plateModal.barWeight);
+
+      app.innerHTML = `
+        <header class="top-bar">
+          <div class="brand-block">
+            <span class="brand-dot"></span>
+            <div>
+              <h1 class="brand-title">THE QUIET STANDARD</h1>
+              <span class="brand-sub">LOCAL-FIRST HYPERTROPHY LOG</span>
+            </div>
+          </div>
+          ${
+            state.activeSession
+              ? `
+                <div class="session-timers">
+                  <div class="timer-pill">
+                    <span class="timer-label">SESSION</span>
+                    <span class="timer-digits" id="session-timer-digits">${formatTime(state.workoutElapsed, true)}</span>
+                  </div>
+                  <div class="timer-pill ${state.restTimer.active ? "rest-active" : ""}">
+                    <span class="timer-label">REST</span>
+                    <span class="timer-digits" id="rest-timer-digits">${formatTime(state.restTimer.remaining, false)}</span>${
+                      state.restTimer.active
+                        ? `
+                          <div class="rest-quick-btns">
+                            <button onclick="adjustRest(-15)">-15</button>
+                            <button onclick="adjustRest(15)">+15</button>
+                            <button onclick="adjustRest(0)">✕</button>
+                          </div>
+                        `
+                        : ""
+                    }
+                  </div>
+                </div>
+              `
+              : ""
+          }
+        </header>
+
+        <main class="viewport-content">
+          ${
+            state.activeTab === "dashboard"
+              ? `
+                <section class="panel">
+                  <div class="panel-header">
+                    <h2>ALL-TIME TOP 3 ANCHORS</h2>
+                    <span class="panel-badge">EPLEY E1RM</span>
+                  </div>
+                  <div class="top3-grid">
+                    ${top3
+                      .map(
+                        (c) => `
+                          <div class="compound-card">
+                            <h4>${c.label.toUpperCase()}</h4>
+                            ${
+                              c.topSets.length === 0
+                                ? `<p class="empty-stat">No working sets logged</p>`
+                                : c.topSets
+                                    .map(
+                                      (s, i) => `
+                                        <div class="top-set-row">
+                                          <span>#${i + 1}</span>
+                                          <span>${s.weight}kg × ${s.reps}</span>
+                                          <span class="top-set-e1rm">${s.e1rm}kg</span>
+                                        </div>
+                                      `
+                                    )
+                                    .join("")
+                            }
+                          </div>
+                        `
+                      )
+                      .join("")}
+                  </div>
+                </section>
+
+                <section class="panel standalone-abs-panel">
+                  <div class="panel-header">
+                    <div>
+                      <h2>STANDALONE CORE & VACUUM MODULE</h2>
+                      <p class="panel-sub">Launch on Rest Days without triggering a full split</p>
+                    </div>
+                  </div>
+                  ${state.db.routines
+                    .filter((r) => r.isStandaloneModule)
+                    .map(
+                      (r) => `
+                        <button class="launch-routine-btn abs-launch" onclick="startRoutine('${r.id}')">
+                          <span class="rt-name">${r.name}</span>
+                          <span class="launch-arrow">LAUNCH →</span>
+                        </button>
+                      `
+                    )
+                    .join("")}
+                </section>
+
+                <section class="panel">
+                  <div class="panel-header">
+                    <h2>4-DAY DUP MICROCYCLE</h2>
+                    <span class="panel-badge">SHOULDER SPECIALIZATION</span>
+                  </div>
+                  <div class="routine-list">
+                    ${state.db.routines
+                      .filter((r) => !r.isStandaloneModule)
+                      .map(
+                        (r) => `
+                          <button class="launch-routine-btn" onclick="startRoutine('${r.id}')">
+                            <div>
+                              <div class="rt-name">${r.name}</div>
+                              <div class="rt-meta">${r.blocks.length} Movement Blocks</div>
+                            </div>
+                            <span class="launch-arrow">START →</span>
+                          </button>
+                        `
+                      )
+                      .join("")}
+                  </div>
+                </section>
+
+                <section class="panel">
+                  <div class="panel-header">
+                    <h2>WEEKLY EFFECTIVE VOLUME (7 DAYS)</h2>
+                    <span class="panel-badge">EXCLUDES WARM-UPS</span>
+                  </div>
+                  ${
+                    Object.entries(weeklyVol).length === 0
+                      ? `<p class="empty-stat">Complete working sets (T, B, F) to track volume.</p>`
+                      : Object.entries(weeklyVol)
+                          .map(
+                            ([m, count]) => `
+                              <div class="volume-row">
+                                <span>${m}</span>
+                                <div class="vol-bar-track">
+                                  <div class="vol-bar-fill" style="width:${Math.min(100, (count / 14) * 100)}%"></div>
+                                </div>
+                                <span class="vol-count">${count} Sets</span>
+                              </div>
+                            `
+                          )
+                          .join("")
+                  }
+                </section>
+
+                <section class="panel">
+                  <div class="panel-header">
+                    <h2>LOCAL STORAGE & DATA PORTABILITY</h2>
+                  </div>
+                  <div class="portability-actions">
+                    <button class="secondary-action-btn" onclick="exportJSON()">↓ EXPORT JSON</button>
+                    <button class="secondary-action-btn" onclick="document.getElementById('import-file').click()">↑ IMPORT JSON</button>
+                    <input id="import-file" type="file" accept="application/json" style="display:none" onchange="importJSON(event)" />
+                  </div>
+                </section>
+              `
+              : ""
+          }
+
+          ${
+            state.activeTab === "workout"
+              ? !state.activeSession
+                ? `
+                  <div class="panel">
+                    <p class="empty-stat" style="margin-bottom:12px;">No active workout running.</p>
+                    <button class="launch-routine-btn" onclick="switchTab('dashboard')">SELECT A ROUTINE FROM DASHBOARD</button>
+                  </div>
+                `
+                : `
+                  <div class="panel">
+                    <h2 style="font-size:0.95rem;">${state.activeSession.routineName}</h2>
+                    <p class="panel-sub">Tap ✓ on an empty box to auto-log your faded Ghost Values.</p>
+                  </div>
+                  ${state.activeSession.blocks
+                    .map((b) => {
+                      if (b.type === "standard") {
+                        return renderExerciseCardHTML(b.exerciseId, b.targetReps, b.restSeconds);
+                      }
+                      if (b.type === "superset") {
+                        const lbl = b.groupLabel || "A";
+                        return `
+                          <div class="superset-container">
+                            <div class="superset-banner">
+                              <span>SUPERSET BLOCK (${lbl}1 / ${lbl}2)</span>
+                              <span>SHARED REST: ${b.restSeconds}S</span>
+                            </div>
+                            ${b.exercises
+                              .map((sub, i) =>
+                                renderExerciseCardHTML(sub.exerciseId, sub.targetReps, b.restSeconds, `${lbl}${i + 1}`)
+                              )
+                              .join("")}
+                          </div>
+                        `;
+                      }
+                      return "";
+                    })
+                    .join("")}
+                  <button class="finish-btn" onclick="finishWorkout()">COMPLETE & SAVE WORKOUT</button>
+                `
+              : ""
+          }
+
+          ${
+            state.activeTab === "library"
+              ? `
+                <section class="panel">
+                  <div class="panel-header"><h2>ADD CUSTOM EXERCISE</h2></div>
+                  <div class="new-ex-form">
+                    <input id="new-ex-name" type="text" placeholder="Exercise Name" />
+                    <div class="form-split">
+                      <select id="new-ex-equip">
+                        ${["Barbell", "Dumbbell", "Cable", "Machine", "Bodyweight", "Time-Based"].map((e) => `<option value="${e}">${e}</option>`).join("")}
+                      </select>
+                      <input id="new-ex-muscle" type="text" placeholder="Muscle Group (e.g., Traps)" />
+                    </div>
+                    <div class="form-split">
+                      <input id="new-ex-tempo" type="text" placeholder="Tempo (e.g., 3-0-1-1)" />
+                      <input id="new-ex-notes" type="text" placeholder="Setup Cues / Pin" />
+                    </div>
+                    <button class="finish-btn" onclick="saveNewExercise()">+ SAVE EXERCISE</button>
+                  </div>
+                </section>
+                <section class="panel">
+                  <div class="panel-header"><h2>EXERCISE LIBRARY (${state.db.exercises.length})</h2></div>${state.db.exercises
+                    .map(
+                      (ex) => `
+                        <div class="lib-ex-row">
+                          <div>
+                            <div class="lib-ex-name">${ex.name}</div>
+                            <div class="lib-ex-meta">${ex.equipmentType} • ${ex.muscleGroup} • ${ex.defaultTempo}</div>
+                          </div>
+                          <button class="delete-ex-btn" onclick="deleteExercise('${ex.id}')">REMOVE</button>
+                        </div>
+                      `
+                    )
+                    .join("")}
+                </section>
+              `
+              : ""
+          }
+        </main>
+
+        ${
+          state.plateModal.open
+            ? `
+              <div class="modal-backdrop" onclick="closePlateModal()">
+                <div class="plate-modal" onclick="event.stopPropagation()">
+                  <div class="panel-header">
+                    <h2>BARBELL PLATE CALCULATOR</h2>
+                    <button class="close-modal-btn" onclick="closePlateModal()">✕</button>
+                  </div>
+                  <p class="panel-sub">${state.plateModal.exerciseName}</p>
+                  <div class="plate-inputs-row">
+                    <div>
+                      <label>TARGET WEIGHT (KG)</label>
+                      <input type="number" step="2.5" value="${state.plateModal.weight}" oninput="updatePlateModal('weight', this.value)" />
+                    </div>
+                    <div>
+                      <label>BARBELL PRESET</label>
+                      <select onchange="updatePlateModal('barWeight', this.value)">
+                        ${state.db.settings.barPresets
+                          .map(
+                            (p) =>
+                              `<option value="${p.weight}" ${state.plateModal.barWeight === p.weight ? "selected" : ""}>${p.label} (${p.weight}kg)</option>`
+                          )
+                          .join("")}
+                      </select>
+                    </div>
+                  </div>
+                  <div class="panel-sub">LOAD PER SIDE: <strong style="color:#fff">${pb.perSideWeight} KG</strong></div>
+                  <div class="barbell-graphic">
+                    <div class="bar-shaft">${state.plateModal.barWeight}kg Bar</div>
+                    <div class="bar-sleeve">
+                      ${
+                        pb.platesPerSide.length === 0
+                          ? `<span class="empty-stat">Empty Bar</span>`
+                          : pb.platesPerSide
+                              .map((p) => `<div class="plate-disk plate-${String(p).replace(".", "_")}">${p}</div>`)
+                              .join("")
+                      }
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `
+            : ""
+        }
+
+        <nav class="bottom-nav">
+          <button class="${state.activeTab === "dashboard" ? "nav-active" : ""}" onclick="switchTab('dashboard')">DASHBOARD</button>
+          <button class="${state.activeTab === "workout" ? "nav-active" : ""}" onclick="switchTab('workout')">IN-SESSION LOG ${state.activeSession ? "●" : ""}</button>
+          <button class="${state.activeTab === "library" ? "nav-active" : ""}" onclick="switchTab('library')">EXERCISES</button>
+        </nav>
+      `;
+    }
+
+    // Wake Lock to keep S26 Ultra screen awake during workouts
+    let wakeLock = null;
+    async function requestWakeLock() {
+      if ("wakeLock" in navigator) {
+        try { wakeLock = await navigator.wakeLock.request("screen"); } catch (e) {}
+      }
+    }
+    document.addEventListener("click", () => { if (!wakeLock) requestWakeLock(); }, { once: true });
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") requestWakeLock(); });
+
+    render();
+  </script>
+</body>
+</html>
