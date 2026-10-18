@@ -10,7 +10,9 @@
   <title>The Quiet Standard Log</title>
 
   <!-- Embedded PWA Manifest for Android Chrome "Install App" -->
-  <link rel="manifest" href='data:application/manifest+json,{"name":"The Quiet Standard Log","short_name":"Quiet Standard","start_url":".","display":"standalone","background_color":"#000000","theme_color":"#000000","orientation":"portrait","icons":[{"src":"data:image/svg+xml;utf8,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 192 192%27><rect width=%27192%27 height=%27192%27 rx=%2736%27 fill=%27%23000000%27/><rect x=%2712%27 y=%2712%27 width=%27168%27 height=%27168%27 rx=%2728%27 fill=%27none%27 stroke=%27%2310b981%27 stroke-width=%276%27/><text x=%2796%27 y=%27118%27 font-family=%27monospace%27 font-size=%2768%27 font-weight=%27900%27 fill=%27%23ffffff%27 text-anchor=%27middle%27>TQS</text></svg>","sizes":"192x192","type":"image/svg+xml","purpose":"any maskable"},{"src":"data:image/svg+xml;utf8,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 512 512%27><rect width=%27512%27 height=%27512%27 rx=%2796%27 fill=%27%23000000%27/><rect x=%2732%27 y=%2732%27 width=%27448%27 height=%27448%27 rx=%2772%27 fill=%27none%27 stroke=%27%2310b981%27 stroke-width=%2716%27/><text x=%27256%27 y=%27310%27 font-family=%27monospace%27 font-size=%27180%27 font-weight=%27900%27 fill=%27%23ffffff%27 text-anchor=%27middle%27>TQS</text></svg>","sizes":"512x512","type":"image/svg+xml","purpose":"any maskable"}]}' />
+    <link rel="manifest" href="/tqs-log/manifest.json" />
+  <script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("/tqs-log/sw.js"));}</script>
+
 
   <style>
     :root {
